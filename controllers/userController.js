@@ -8,7 +8,7 @@ router.get("/get-logged-user", authMiddleware, async (req, res) => {
     const user = await User.findOne({ _id: req.body.userId });
 
     res.send({
-      success: false,
+      success: true,
       message: "user fetched successfully",
       data: user,
     });
@@ -20,7 +20,7 @@ router.get("/get-logged-user", authMiddleware, async (req, res) => {
   }
 });
 
-router.get("/get-all-user", authMiddleware, async (req, res) => {
+router.get("/get-all-users", authMiddleware, async (req, res) => {
   try {
     const userId = req.body.userId;
     const allUsers = await User.find({ _id: { $ne: userId } });
