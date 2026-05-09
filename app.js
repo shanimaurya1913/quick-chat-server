@@ -13,7 +13,15 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+const server = require("http").createServer(app);
+
+const io = require("socket.io")(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
+  },
+});
 
 app.get("/", (req, res) => {
   console.log("Express server");
@@ -24,4 +32,49 @@ app.use("/api/user", userRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/message", messageRouter);
 
-module.exports = app;
+const onlineUser = [];
+
+io.on("connection", (socket) => {
+  // console.log("connected with socket Id: " + socket.id);
+  socket.on("join-room", (userId) => {
+    socket.join(userId);
+    // console.log("user join in room", userId);
+  });
+
+  socket.on("send-message", (message) => {
+    io.to(message.members[0])
+      .to(message.members[1])
+      .emit("receive-message", message);
+
+    io.to(message.members[0])
+      .to(message.members[1])
+      .emit("set-message-count", message);
+  });
+
+  socket.on("clear-unread-messages", (data) => {
+    io.to(data.members[0])
+      .to(data.members[1])
+      .emit("message-count-cleared", data);
+  });
+
+  socket.on("user-typing", (data) => {
+    io.to(data.members[0]).to(data.members[1]).emit("started-typing", data);
+  });
+
+  socket.on("user-login", (userId) => {
+    if (!onlineUser.includes(userId)) {
+      onlineUser.push(userId);
+    }
+    socket.emit("online-users", onlineUser);
+  });
+
+  socket.on("user-offline", (userId) => {
+    const userIndex = onlineUser.indexOf(userId);
+    if (userIndex !== -1) {
+      onlineUser.splice(userIndex, 1);
+    }
+    io.emit("online-users-updated", onlineUser);
+  });
+});
+
+module.exports = server;

@@ -2,7 +2,14 @@ const jwt = require("jsonwebtoken");
 
 module.exports = (req, res, next) => {
   try {
-    const token = req.headers.authorization.split(" ")[1];
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).send({
+        success: false,
+        message: "Authentication token missing",
+      });
+    }
 
     const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
 

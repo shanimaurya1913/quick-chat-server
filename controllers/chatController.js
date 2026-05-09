@@ -50,7 +50,7 @@ router.post("/clear-unread-message", authMiddleware, async (req, res) => {
     //We want to update the unread message count in chat collection
     const chat = await Chat.findById(chatId);
     if (!chat) {
-      res.send({
+      return res.send({
         message: "No Chat found with given chat ID.",
         success: false,
       });

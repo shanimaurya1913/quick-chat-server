@@ -1,7 +1,6 @@
 const router = require("express").Router();
 const authMiddleware = require("../middlewares/authMiddleware");
 const Chat = require("../models/chat");
-const message = require("../models/message");
 const Message = require("../models/message");
 
 router.post("/new-message", authMiddleware, async (req, res) => {
@@ -33,16 +32,16 @@ router.post("/new-message", authMiddleware, async (req, res) => {
 });
 
 router.get("/get-all-messages/:chatId", authMiddleware, async (req, res) => {
-  const allMessages = await Message.find({
-    chatId: req.params.chatId,
-  }).sort({ createdAt: 1 });
-
-  res.send({
-    success: true,
-    message: "Messages fetched successfully",
-    data: allMessages,
-  });
   try {
+    const allMessages = await Message.find({
+      chatId: req.params.chatId,
+    }).sort({ createdAt: 1 });
+
+    res.send({
+      success: true,
+      message: "Messages fetched successfully",
+      data: allMessages,
+    });
   } catch (error) {
     res.status(400).send({
       success: false,
