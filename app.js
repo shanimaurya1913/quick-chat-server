@@ -24,7 +24,7 @@ const corsOptions = {
   credentials: true,
 };
 
-app.use(cors(corsOptions));
+app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "50mb" }));
 
 const server = require("http").createServer(app);
