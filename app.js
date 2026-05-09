@@ -1,25 +1,39 @@
 const express = require("express");
-const app = express();
+const cors = require("cors");
+const mongoose = require("mongoose");
 const authRouter = require("./controllers/authController");
 const userRouter = require("./controllers/userController");
 const chatRouter = require("./controllers/chatController");
 const messageRouter = require("./controllers/messageController");
-const cors = require("cors");
 
-app.use(
-  cors({
-    origin: "http://localhost:3000", // Client URL
-    credentials: true, // If you’re using cookies or authentication
-  })
-);
+const app = express();
 
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:3000")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "50mb" }));
+
 const server = require("http").createServer(app);
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
@@ -27,6 +41,28 @@ app.get("/", (req, res) => {
   console.log("Express server");
   res.send("Express server");
 });
+
+app.get("/health", (req, res) => {
+  res.send({
+    success: true,
+    server: "running",
+    database:
+      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
+  });
+});
+
+app.use("/api", (req, res, next) => {
+  if (mongoose.connection.readyState === 1) {
+    return next();
+  }
+
+  return res.status(503).send({
+    success: false,
+    message:
+      "Database is not connected. Check MongoDB Atlas network access and CONN_STRING.",
+  });
+});
+
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
 app.use("/api/chat", chatRouter);
